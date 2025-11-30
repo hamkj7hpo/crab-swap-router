@@ -1,9 +1,0 @@
-/var/www/html/crab_swap_router/programs/crabswap_router/target/sbpf-solana-solana/release/deps/libsolana_loader_v4_interface-e89ff37c4c2ecb40.rmeta: /home/safe-pump/.cargo/registry/src/index.crates.io-6f17d22bba15001f/solana-loader-v4-interface-2.2.1/src/lib.rs /home/safe-pump/.cargo/registry/src/index.crates.io-6f17d22bba15001f/solana-loader-v4-interface-2.2.1/src/instruction.rs /home/safe-pump/.cargo/registry/src/index.crates.io-6f17d22bba15001f/solana-loader-v4-interface-2.2.1/src/state.rs
-
-/var/www/html/crab_swap_router/programs/crabswap_router/target/sbpf-solana-solana/release/deps/libsolana_loader_v4_interface-e89ff37c4c2ecb40.rlib: /home/safe-pump/.cargo/registry/src/index.crates.io-6f17d22bba15001f/solana-loader-v4-interface-2.2.1/src/lib.rs /home/safe-pump/.cargo/registry/src/index.crates.io-6f17d22bba15001f/solana-loader-v4-interface-2.2.1/src/instruction.rs /home/safe-pump/.cargo/registry/src/index.crates.io-6f17d22bba15001f/solana-loader-v4-interface-2.2.1/src/state.rs
-
-/var/www/html/crab_swap_router/programs/crabswap_router/target/sbpf-solana-solana/release/deps/solana_loader_v4_interface-e89ff37c4c2ecb40.d: /home/safe-pump/.cargo/registry/src/index.crates.io-6f17d22bba15001f/solana-loader-v4-interface-2.2.1/src/lib.rs /home/safe-pump/.cargo/registry/src/index.crates.io-6f17d22bba15001f/solana-loader-v4-interface-2.2.1/src/instruction.rs /home/safe-pump/.cargo/registry/src/index.crates.io-6f17d22bba15001f/solana-loader-v4-interface-2.2.1/src/state.rs
-
-/home/safe-pump/.cargo/registry/src/index.crates.io-6f17d22bba15001f/solana-loader-v4-interface-2.2.1/src/lib.rs:
-/home/safe-pump/.cargo/registry/src/index.crates.io-6f17d22bba15001f/solana-loader-v4-interface-2.2.1/src/instruction.rs:
-/home/safe-pump/.cargo/registry/src/index.crates.io-6f17d22bba15001f/solana-loader-v4-interface-2.2.1/src/state.rs:
