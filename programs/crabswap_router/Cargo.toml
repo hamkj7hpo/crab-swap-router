@@ -1,0 +1,24 @@
+[package]
+name = "crabswap_router"
+version = "0.1.0"
+edition = "2021"
+description = "CRABSWAP — FIRST REAL ON-CHAIN BLS12-381 ROUTER"
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[dependencies]
+anchor-lang = { version = "0.31.1", features = ["init-if-needed"] }
+anchor-spl = "0.31.1"
+
+# PURE ARKWORKS — NO DALEK, NO ZEROIZE, NO LIGHT-PSP
+ark-ff = "0.4.2"
+ark-ec = "0.4.2"
+ark-bls12-381 = "0.4.0"
+ark-serialize = "0.4.2"
+sha2 = "0.10"
+
+[features]
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+no-entrypoint = []

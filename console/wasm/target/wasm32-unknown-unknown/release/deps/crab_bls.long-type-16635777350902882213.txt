@@ -1,0 +1,2 @@
+ark_ec::short_weierstrass::Affine<P>
+ark_ec::short_weierstrass::Affine<ark_bls12_381::g2::Config>

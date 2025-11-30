@@ -1,0 +1,9 @@
+ark_ec::bls12::G1Prepared<ark_bls12_381::Config>
+&(&ark_ec::short_weierstrass::Projective<ark_bls12_381::g1::Config>, &ark_ec::short_weierstrass::Affine<ark_bls12_381::g2::Config>)
+ark_ec::bls12::G1Prepared<ark_bls12_381::Config>: From<&(&ark_ec::short_weierstrass::Projective<ark_bls12_381::g1::Config>, &ark_ec::short_weierstrass::Affine<ark_bls12_381::g2::Config>)>
+ark_ec::bls12::G1Prepared<P>
+From<&ark_ec::short_weierstrass::Affine<<P as Bls12Config>::G1Config>>
+From<&ark_ec::short_weierstrass::Projective<<P as Bls12Config>::G1Config>>
+From<ark_ec::short_weierstrass::Affine<<P as Bls12Config>::G1Config>>
+From<ark_ec::short_weierstrass::Projective<<P as Bls12Config>::G1Config>>
+Into<ark_ec::bls12::G1Prepared<ark_bls12_381::Config>>
