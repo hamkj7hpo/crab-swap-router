@@ -5,7 +5,7 @@ resolution = true
 skip-lint = false
 
 [programs.devnet]
-crabswap_router = "8Vp1dKYRVNxYNCmAdjhnpXyRKuPB8cfjRgoazzcfL4p4"
+crabswap_router = "7veFwV1nAJm9eERH1d4u693wHoxgsHgiV5D2vi9fXr1z"
 
 [registry]
 url = "https://api.apr.dev"

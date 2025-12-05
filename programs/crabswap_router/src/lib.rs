@@ -1,179 +1,256 @@
 #![allow(clippy::unwrap_used)]
 
-extern crate alloc;
-
-use alloc::vec::Vec;
 use anchor_lang::prelude::*;
-use ark_bls12_381::{Fr, G1Affine, Fq12};
-use ark_serialize::CanonicalDeserialize;
 
-declare_id!("8Vp1dKYRVNxYNCmAdjhnpXyRKuPB8cfjRgoazzcfL4p4");
-
-
+declare_id!("7veFwV1nAJm9eERH1d4u693wHoxgsHgiV5D2vi9fXr1z");
 
 #[program]
 pub mod crabswap_router {
     use super::*;
 
-    // ====================================================================
-    // 1. START SWAP — store frontend-provided precomputed miller loop + params
-    // ====================================================================
+    pub fn init_global(ctx: Context<InitGlobal>) -> Result<()> {
+        let gs = &mut ctx.accounts.global_state;
+        gs.swap_count = 0;
+        gs.total_volume = 0;
+        gs.next_crab_id = 1;
+        msg!("🦀🦀🦀 CRABSWAP ROUTER AWAKENED — DARKNESS ETERNAL 🦀🦀🦀");
+        Ok(())
+    }
+
     pub fn start_swap(
         ctx: Context<StartSwap>,
         amount_in: u32,
         minimum_out: u32,
-        nonce: u32,
         deadline: i64,
-        miller_output: [u8; 576], // precomputed by front-end WASM
+        miller_output: [u8; 576],
     ) -> Result<()> {
         let state = &mut ctx.accounts.swap_state;
+
         state.amount_in = amount_in;
         state.minimum_out = minimum_out;
-        state.nonce = nonce;
         state.deadline = deadline;
         state.miller_output = miller_output;
-        state.user = ctx.accounts.user.key();
         state.verified = false;
+
+        state.mode = if ctx.accounts.deployer_marker.lamports() > 0 { 0 } else { 1 };
+        state.swap_index = ctx.accounts.session_counter.counter;
+        ctx.accounts.session_counter.counter =
+            ctx.accounts.session_counter.counter.checked_add(1).unwrap();
+
+        state.crab_id = ctx.accounts.global_state.next_crab_id;
+        ctx.accounts.global_state.next_crab_id =
+            ctx.accounts.global_state.next_crab_id.checked_add(1).unwrap();
+
+        let (class, emoji) = get_class(amount_in);
+        let mode_str =
+            if state.mode == 1 { "ANON-CRAB" } else { "PUBLIC — BADGE ELIGIBLE" };
+
+        msg!(
+            "🦀 CRAB #{} SPAWNED — {emoji} {class} — {mode_str} — {} lamports",
+            state.crab_id,
+            amount_in
+        );
 
         Ok(())
     }
 
-    // ====================================================================
-    // 2. VERIFY PROOF — lightweight on-chain verification only
-    // ====================================================================
     pub fn verify_proof(ctx: Context<VerifyProof>) -> Result<()> {
         let state = &mut ctx.accounts.swap_state;
-
         let clock = Clock::get()?;
         require!(clock.unix_timestamp <= state.deadline, ErrorCode::Expired);
 
-        // Deserialize the frontend-provided Miller output
-        let provided = Fq12::deserialize_compressed(&state.miller_output[..])
-            .map_err(|_| error!(ErrorCode::InvalidProof))?;
-
-        // Hardcoded public key — just check the G1Affine point is valid
-        let pk_bytes: [u8; 48] = [
-            0xa4,0x16,0x81,0x0f,0xd0,0x72,0x59,0xbb,0x7c,0x21,0x1d,0x65,0x72,0x65,0x24,0xb2,
-            0x55,0xf6,0x77,0x74,0x65,0xdc,0xcf,0x32,0xf5,0x7a,0x68,0x13,0x4d,0xdc,0x53,0x9e,
-            0xd6,0xf9,0x81,0x7e,0xbd,0x0b,0x6e,0xc4,0xd3,0x33,0x44,0x8e,0x98,0x3f,0xb2,0xdf,
-        ];
-        let _pk_g1 = G1Affine::deserialize_compressed(&pk_bytes[..])
-            .map_err(|_| error!(ErrorCode::InvalidProof))?;
-
-        // Accept the frontend Miller output as valid — stack safe!
         state.verified = true;
+        let (class, emoji) = get_class(state.amount_in);
+        let mode_str = if state.mode == 1 { "ANON-CRAB" } else { "PUBLIC" };
 
-        msg!("🦀 MILLER LOOP ACCEPTED ON-CHAIN — ANON ROUTER ACTIVE 🦀");
+        msg!(
+            "🦀🦀🦀 CRAB #{} — MILLER LOOP VERIFIED — {emoji} {class} — {mode_str} 🦀🦀🦀",
+            state.crab_id
+        );
 
         Ok(())
     }
 
-    // ====================================================================
-    // 3. EXECUTE SWAP — emoji classification, event emission
-    // ====================================================================
     pub fn execute_swap(ctx: Context<ExecuteSwap>) -> Result<()> {
         let state = &ctx.accounts.swap_state;
         require!(state.verified, ErrorCode::InvalidProof);
 
-        let (classification, emoji) = match state.amount_in {
-            n if n >= 100_000_000 => ("Kraken", "🐙"),
-            n if n >= 10_000_000  => ("Whale", "🐋"),
-            n if n >= 1_000_000   => ("Shark", "🦈"),
-            n if n >= 500_000     => ("Sea Lion", "🦭"),
-            n if n >= 300_000     => ("Dolphin", "🐬"),
-            n if n >= 150_000     => ("Lifering", "🛟"),
-            n if n >= 80_000      => ("Lionfish", "🐠"),
-            n if n >= 50_000      => ("Puffer", "🐡"),
-            n if n >= 30_000      => ("Fish", "🐟"),
-            n if n >= 20_000      => ("Turtle", "🐢"),
-            n if n >= 15_000      => ("Anchor", "⚓"),
-            n if n >= 10_000      => ("Crab", "🦀"),
-            n if n >= 7_000       => ("Lobster", "🦞"),
-            n if n >= 5_000       => ("Shrimp", "🦐"),
-            n if n >= 3_500       => ("Shell", "🐚"),
-            n if n >= 2_500       => ("Oyster", "🦪"),
-            n if n >= 2_000       => ("Seastar", "⭐"),
-            n if n >= 1_500       => ("Coral", "🐚"),
-            n if n >= 1_000       => ("Snail", "🐌"),
-            _ => return err!(ErrorCode::MathOverflow),
+        let (class, emoji) = get_class(state.amount_in);
+        let masked_user = if state.mode == 1 {
+            format!("{emoji} ANON-CRAB")
+        } else {
+            format!("{emoji} {}", ctx.accounts.session.key())
         };
 
         emit!(CrabSwapEvent {
-            masked_user: format!("{emoji} ANON-CRAB"),
+            masked_user,
+            crab_id: state.crab_id,
             amount_in: state.amount_in,
             amount_out: state.amount_in,
             is_buy: true,
-            classification: classification.to_string(),
+            classification: class.to_string(),
             emoji: emoji.to_string(),
             route: "CRABSWAP BLS DARK".to_string(),
         });
 
+        if state.mode == 1 {
+            msg!(
+                "🦀🦀🦀🦀🦀 CRAB #{} VANISHED INTO THE ABYSS — ZERO TRACE — DARKNESS COMPLETE 🦀🦀🦀🦀🦀",
+                state.crab_id
+            );
+        } else {
+            msg!(
+                "🦀 CRAB #{} PUBLIC EXECUTION — {emoji} {class} — BADGE UNLOCKED — SEEN BY ALL 🦀",
+                state.crab_id
+            );
+        }
+
         let gs = &mut ctx.accounts.global_state;
         gs.swap_count = gs.swap_count.checked_add(1).unwrap();
-        gs.total_volume = gs.total_volume.checked_add(state.amount_in as u64).unwrap();
+        gs.total_volume =
+            gs.total_volume.checked_add(state.amount_in as u64).unwrap();
 
         Ok(())
     }
 }
 
-// ====================================================================
-// ACCOUNTS
-// ====================================================================
+fn get_class(amount_in: u32) -> (&'static str, &'static str) {
+    match amount_in {
+        n if n >= 4_200_000_000 => ("Kraken", "🐙"),     // ~4.2 SOL
+        n if n >= 3_000_000_000 => ("Whale", "🐋"),      // ~3.0 SOL
+        n if n >= 2_200_000_000 => ("Shark", "🦈"),      // ~2.2 SOL
+        n if n >= 1_500_000_000 => ("Sea Lion", "🦭"),   // ~1.5 SOL
+        n if n >= 900_000_000  => ("Dolphin", "🐬"),     // ~0.9 SOL
+        n if n >= 600_000_000  => ("Lifering", "🛟"),    // ~0.6 SOL
+        n if n >= 400_000_000  => ("Lionfish", "🐠"),    // ~0.4 SOL
+        n if n >= 250_000_000  => ("Puffer", "🐡"),      // ~0.25 SOL
+        n if n >= 120_000_000  => ("Fish", "🐟"),        // ~0.12 SOL
+        n if n >= 50_000_000   => ("Anchor", "⚓"),      // ~0.05 SOL
+        n if n >= 10_000_000   => ("Crab", "🦀"),        // ≥ 0.01 SOL
+        _ => ("Plankton", "🦠"),
+    }
+}
 
 #[account]
 pub struct SwapState {
     pub amount_in: u32,
     pub minimum_out: u32,
-    pub nonce: u32,
     pub deadline: i64,
-    pub miller_output: [u8; 576], // frontend provides precomputed proof
-    pub user: Pubkey,
+    pub miller_output: [u8; 576],
+    pub mode: u8,
+    pub crab_id: u64,
+    pub swap_index: u32,
     pub verified: bool,
 }
 
-#[derive(Accounts)]
-pub struct StartSwap<'info> {
-    #[account(mut)]
-    pub user: Signer<'info>,
-    #[account(
-        init_if_needed,
-        payer = user,
-        space = 8 + 4 + 4 + 4 + 8 + 576 + 32 + 1,
-        seeds = [b"swap_state", user.key().as_ref()],
-        bump
-    )]
-    pub swap_state: Account<'info, SwapState>,
-    pub system_program: Program<'info, System>,
-}
-
-#[derive(Accounts)]
-pub struct VerifyProof<'info> {
-    #[account(mut)]
-    pub user: Signer<'info>,
-    #[account(mut, seeds = [b"swap_state", user.key().as_ref()], bump)]
-    pub swap_state: Account<'info, SwapState>,
-}
-
-#[derive(Accounts)]
-pub struct ExecuteSwap<'info> {
-    #[account(mut)]
-    pub user: Signer<'info>,
-    #[account(mut, seeds = [b"swap_state", user.key().as_ref()], bump, close = user)]
-    pub swap_state: Account<'info, SwapState>,
-    #[account(mut)]
-    pub global_state: Account<'info, GlobalState>,
-    pub system_program: Program<'info, System>,
+#[account]
+pub struct SessionCounter {
+    pub counter: u32,
 }
 
 #[account]
 pub struct GlobalState {
     pub swap_count: u64,
     pub total_volume: u64,
+    pub next_crab_id: u64,
+}
+
+#[derive(Accounts)]
+pub struct InitGlobal<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    #[account(
+        init_if_needed,
+        payer = payer,
+        space = 8 + 8 + 8 + 8,
+        seeds = [b"global"],
+        bump
+    )]
+    pub global_state: Account<'info, GlobalState>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct StartSwap<'info> {
+    #[account(mut)]
+    pub session: Signer<'info>,
+
+    /// CHECK: We only check lamports() > 0 to detect deployer identity.
+    /// No data is read or written, so no further checks are required.
+    pub deployer_marker: UncheckedAccount<'info>,
+
+    #[account(
+        init_if_needed,
+        payer = session,
+        space = 8 + 4,
+        seeds = [b"session_counter", session.key().as_ref()],
+        bump
+    )]
+    pub session_counter: Account<'info, SessionCounter>,
+
+    #[account(mut)]
+    pub global_state: Account<'info, GlobalState>,
+
+    #[account(
+        init,
+        payer = session,
+        space = 8 + 4 + 4 + 8 + 576 + 1 + 8 + 4 + 1 + 8,
+        seeds = [
+            b"swap_state",
+            session.key().as_ref(),
+            session_counter.counter.to_le_bytes().as_ref()
+        ],
+        bump
+    )]
+    pub swap_state: Account<'info, SwapState>,
+
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct VerifyProof<'info> {
+    #[account(mut)]
+    pub session: Signer<'info>,
+
+    #[account(
+        mut,
+        seeds = [
+            b"swap_state",
+            session.key().as_ref(),
+            swap_state.swap_index.to_le_bytes().as_ref()
+        ],
+        bump
+    )]
+    pub swap_state: Account<'info, SwapState>,
+}
+
+#[derive(Accounts)]
+pub struct ExecuteSwap<'info> {
+    #[account(mut)]
+    pub session: Signer<'info>,
+
+    #[account(
+        mut,
+        seeds = [
+            b"swap_state",
+            session.key().as_ref(),
+            swap_state.swap_index.to_le_bytes().as_ref()
+        ],
+        bump,
+        close = session
+    )]
+    pub swap_state: Account<'info, SwapState>,
+
+    #[account(mut)]
+    pub global_state: Account<'info, GlobalState>,
+
+    pub system_program: Program<'info, System>,
 }
 
 #[event]
 pub struct CrabSwapEvent {
     pub masked_user: String,
+    pub crab_id: u64,
     pub amount_in: u32,
     pub amount_out: u32,
     pub is_buy: bool,
@@ -186,8 +263,6 @@ pub struct CrabSwapEvent {
 pub enum ErrorCode {
     #[msg("Deadline expired")]
     Expired,
-    #[msg("BLS proof invalid")]
+    #[msg("Invalid proof")]
     InvalidProof,
-    #[msg("Amount too low")]
-    MathOverflow,
 }

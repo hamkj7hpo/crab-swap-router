@@ -47,3 +47,18 @@ __pycache__/
 #######################################
 .DS_Store
 Thumbs.db
+
+#######################################
+# CRABSWAP-API (Node backend)
+#######################################
+crabswap-api/node_modules/
+crabswap-api/public/**/*.map
+crabswap-api/.env
+crabswap-api/npm-debug.log
+crabswap-api/yarn-error.log
+
+#######################################
+# WASM EXTRA BUILD OUTPUT
+#######################################
+console/wasm/pkg/
+console/wasm/target/

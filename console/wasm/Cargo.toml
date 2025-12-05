@@ -15,7 +15,6 @@ ark-serialize = "0.4.2"
 ark-std = "0.4.0"
 sha2 = "0.10"
 getrandom = { version = "0.2", features = ["js"] }
-crab_secret = { path = "./secret_key_crate" }
 
 [profile.release]
 opt-level = "z"

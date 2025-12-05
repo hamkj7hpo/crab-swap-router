@@ -1,2 +1,0 @@
-ark_ec::short_weierstrass::Projective<P>
-ark_ec::short_weierstrass::Projective<ark_bls12_381::g2::Config>
